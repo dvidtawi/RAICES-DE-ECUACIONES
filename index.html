@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Métodos Numéricos – Resolución de Ecuaciones</title>
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
+<!-- =================  ESTILOS  ================== -->
+<style>
+body {
+    font-family: "Segoe UI", Arial;
+    background: #e7ecf3;
+    margin: 0;
+    padding: 0;
+}
+header {
+    background: #283593; color: white;
+    padding: 25px; text-align: center;
+    font-size: 28px; font-weight: bold;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+}
+.tab { overflow: hidden; background: #3949ab; }
+.tab button {
+    background-color: inherit; border: none;
+    padding: 16px 22px; cursor: pointer;
+    color: white; font-size: 17px;
+}
+.tab button:hover { background: #5c6bc0; }
+.tab button.active { background: #1e88e5; }
+
+.tabcontent {
+    display: none; padding: 25px;
+    background: #fff; margin: 20px;
+    border-radius: 10px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+}
+
+.card {
+    background: #fafafa;
+    padding: 15px; margin-top: 20px;
+    border-left: 5px solid #1e88e5;
+    border-radius: 6px;
+}
+
+button.solve {
+    background: #1e88e5; color:white;
+    padding: 10px 18px; border: none;
+    border-radius: 6px; cursor: pointer;
+}
+button.solve:hover { background:#1565c0; }
+
+table { width:100%; border-collapse: collapse; margin-top:15px; }
+th, td { border:1px solid #bbb; padding:6px; text-align:center; }
+th { background:#e3f2fd; }
+</style>
+
+</head>
+<body>
+
+<header>Resolución Numérica de Ecuaciones – Métodos Iterativos</header>
+
+<!-- =============== PESTAÑAS ================ -->
+<div class="tab">
+  <button class="tablinks" id="defaultOpen" onclick="openTab(event, 'E1')">Ejercicio 1</button>
+  <button class="tablinks" onclick="openTab(event, 'E2')">Ejercicio 2</button>
+  <button class="tablinks" onclick="openTab(event, 'E3')">Ejercicio 3</button>
+  <button class="tablinks" onclick="openTab(event, 'E4')">Ejercicio 4</button>
+</div>
+
+<!-- =============== CONTENIDO ================ -->
+
+<div id="E1" class="tabcontent">
+<h2>Ejercicio 1</h2>
+<div class="card">\( x^3 - e^{0.8x} = 20 \)</div>
+<button class="solve" onclick="solve1()">Resolver</button>
+<div id="sol1"></div><div id="table1N"></div><div id="table1B"></div><div id="table1S"></div>
+<div id="plot1" style="width:600px;height:400px;"></div>
+</div>
+
+<div id="E2" class="tabcontent">
+<h2>Ejercicio 2</h2>
+<div class="card">\( 3\sin(0.5x) - 0.5x + 2 = 0 \)</div>
+<button class="solve" onclick="solve2()">Resolver</button>
+<div id="sol2"></div><div id="table2N"></div><div id="table2B"></div><div id="table2S"></div>
+<div id="plot2" style="width:600px;height:400px;"></div>
+</div>
+
+<div id="E3" class="tabcontent">
+<h2>Ejercicio 3</h2>
+<div class="card">\( x^3 - x^2 e^{-0.5x} - 3x = -1 \)</div>
+<button class="solve" onclick="solve3()">Resolver</button>
+<div id="sol3"></div><div id="table3N"></div><div id="table3B"></div><div id="table3S"></div>
+<div id="plot3" style="width:600px;height:400px;"></div>
+</div>
+
+<div id="E4" class="tabcontent">
+<h2>Ejercicio 4</h2>
+<div class="card">\( \cos^2(x) - 0.5 x e^{0.3x} + 5 = 0 \)</div>
+<button class="solve" onclick="solve4()">Resolver</button>
+<div id="sol4"></div><div id="table4N"></div><div id="table4B"></div><div id="table4S"></div>
+<div id="plot4" style="width:600px;height:400px;"></div>
+</div>
+
+
+<!-- =============== SCRIPTS ===================== -->
+<script>
+// ================= PESTAÑAS ===================
+function openTab(evt, tabName) {
+    let i, tabcontent, tablinks;
+    tabcontent = document.getElementsByClassName("tabcontent");
+    for (i=0;i<tabcontent.length;i++) tabcontent[i].style.display = "none";
+    tablinks = document.getElementsByClassName("tablinks");
+    for (i=0;i<tablinks.length;i++) tablinks[i].className = tablinks[i].className.replace(" active","");
+    document.getElementById(tabName).style.display = "block";
+    evt.currentTarget.className += " active";
+}
+document.getElementById("defaultOpen").click();
+
+// ================= METODOS =====================
+function newtonTable(f, df, x0, tol=0.0005, maxIter=50) {
+    let table = [];
+    let x = x0;
+    for (let i=1;i<=maxIter;i++) {
+        let fx=f(x), dfx=df(x);
+        if (Math.abs(dfx)<1e-10) break;
+        let x1 = x - fx/dfx;
+        let err = Math.abs(x1-x);
+        table.push([i,x.toFixed(6),fx.toExponential(3),dfx.toExponential(3),x1.toFixed(6),err.toFixed(6)]);
+        if (err<tol) return {root:x1,table};
+        x=x1;
+    }
+    return {root:NaN,table};
+}
+
+function bisectionTable(f,a,b,tol=0.0005,maxIter=50){
+    let table=[];
+    if(f(a)*f(b)>0) return{root:NaN,table,err:"sin cambio de signo"};
+    let m,err;
+    for(let i=0;i<maxIter;i++){
+        m=(a+b)/2; err=Math.abs(b-a)/2;
+        table.push([a.toFixed(6),b.toFixed(6),m.toFixed(6),f(m).toExponential(3),err.toFixed(6)]);
+        if(err<tol) return {root:m,table};
+        if(f(a)*f(m)<=0) b=m; else a=m;
+    }
+    return{root:m,table};
+}
+
+function secantTable(f,x0,x1,tol=0.0005,maxIter=50){
+    let table=[];
+    for(let i=1;i<=maxIter;i++){
+        let fx0=f(x0), fx1=f(x1);
+        let denom=fx1-fx0;
+        if(Math.abs(denom)<1e-10) break;
+        let x2=x1 - fx1*(x1-x0)/denom;
+        let err=Math.abs(x2-x1);
+        table.push([i,x0.toFixed(6),x1.toFixed(6),x2.toFixed(6),err.toFixed(6)]);
+        if(err<tol) return{root:x2,table};
+        x0=x1; x1=x2;
+    }
+    return{root:NaN,table};
+}
+
+function exactRoot(f,df,x){
+    for(let i=0;i<80;i++){
+        let fx=f(x), dfx=df(x);
+        if(Math.abs(dfx)<1e-10) break;
+        x=x-fx/dfx;
+    }
+    return x;
+}
+
+function plotFunction(f, div, xmin, xmax){
+    let x=[],y=[];
+    for(let i=0;i<500;i++){
+        let t = xmin + (xmax-xmin)*i/500;
+        x.push(t); y.push(f(t));
+    }
+    Plotly.newPlot(div,[{x,y,type:"scatter"}],{margin:{t:20}});
+}
+
+function makeNewtonTable(div,t){
+    let h="<h3>Newton</h3><table><tr><th>Iter</th><th>x</th><th>f(x)</th><th>f'(x)</th><th>xₙ₊₁</th><th>Error</th></tr>";
+    t.forEach(r=>h+=`<tr>${r.map(c=>`<td>${c}</td>`).join("")}</tr>`);
+    document.getElementById(div).innerHTML=h+"</table>";
+}
+function makeBisectionTable(div,t){
+    let h="<h3>Bisección</h3><table><tr><th>a</th><th>b</th><th>m</th><th>f(m)</th><th>Error</th></tr>";
+    t.forEach(r=>h+=`<tr>${r.map(c=>`<td>${c}</td>`).join("")}</tr>`);
+    document.getElementById(div).innerHTML=h+"</table>";
+}
+function makeSecantTable(div,t){
+    let h="<h3>Secante</h3><table><tr><th>Iter</th><th>xₙ₋₁</th><th>xₙ</th><th>xₙ₊₁</th><th>Error</th></tr>";
+    t.forEach(r=>h+=`<tr>${r.map(c=>`<td>${c}</td>`).join("")}</tr>`);
+    document.getElementById(div).innerHTML=h+"</table>";
+}
+
+// ============= SOLVERS ===================
+function solve1(){
+    const f=x=>x**3 - Math.exp(0.8*x) - 20;
+    const df=x=>3*x*x - 0.8*Math.exp(0.8*x);
+    let exact=exactRoot(f,df,3);
+    let N=newtonTable(f,df,3);
+    let B=bisectionTable(f,0,8);
+    let S=secantTable(f,1,5);
+    document.getElementById("sol1").innerHTML=
+        `<div class='card'><b>Solución exacta:</b> ${exact.toFixed(8)}</div>`;
+    makeNewtonTable("table1N",N.table);
+    makeBisectionTable("table1B",B.table);
+    makeSecantTable("table1S",S.table);
+    plotFunction(f,"plot1",0,8);
+}
+
+function solve2(){
+    const f=x=>3*Math.sin(0.5*x)-0.5*x+2;
+    const df=x=>1.5*Math.cos(0.5*x)-0.5;
+    let exact=exactRoot(f,df,0);
+    let N=newtonTable(f,df,0);
+    let B=bisectionTable(f,-10,10);
+    let S=secantTable(f,-5,5);
+    document.getElementById("sol2").innerHTML=
+        `<div class='card'><b>Solución exacta:</b> ${exact.toFixed(8)}</div>`;
+    makeNewtonTable("table2N",N.table);
+    makeBisectionTable("table2B",B.table);
+    makeSecantTable("table2S",S.table);
+    plotFunction(f,"plot2",-10,10);
+}
+
+function solve3(){
+    const f=x=>x*x*x - x*x*Math.exp(-0.5*x) - 3*x + 1;
+    const df=x=>3*x*x - (2*x*Math.exp(-0.5*x) - 0.5*x*x*Math.exp(-0.5*x)) - 3;
+    let exact=exactRoot(f,df,0.5);
+    let N=newtonTable(f,df,0.5);
+    let B=bisectionTable(f,-5,5);
+    let S=secantTable(f,-3,2);
+    document.getElementById("sol3").innerHTML=
+        `<div class='card'><b>Solución exacta:</b> ${exact.toFixed(8)}</div>`;
+    makeNewtonTable("table3N",N.table);
+    makeBisectionTable("table3B",B.table);
+    makeSecantTable("table3S",S.table);
+    plotFunction(f,"plot3",-5,5);
+}
+
+function solve4(){
+    const f=x=>Math.cos(x)**2 - 0.5*x*Math.exp(0.3*x) + 5;
+    const df=x=>-2*Math.cos(x)*Math.sin(x) -0.5*Math.exp(0.3*x) -0.15*x*Math.exp(0.3*x);
+    let exact=exactRoot(f,df,1);
+    let N=newtonTable(f,df,1);
+    let B=bisectionTable(f,-10,10);
+    let S=secantTable(f,-5,5);
+    document.getElementById("sol4").innerHTML=
+        `<div class='card'><b>Solución exacta:</b> ${exact.toFixed(8)}</div>`;
+    makeNewtonTable("table4N",N.table);
+    makeBisectionTable("table4B",B.table);
+    makeSecantTable("table4S",S.table);
+    plotFunction(f,"plot4",-10,10);
+}
+</script>
+
+</body>
+</html>
